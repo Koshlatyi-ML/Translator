@@ -1,4 +1,5 @@
 import lexeme.Lexeme;
+import lexeme.StraightLexeme;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -63,28 +64,37 @@ public class CodeScanner {
             Charset cs = Charset.forName("UTF-8");
             CharBuffer cBuf = cs.decode(mBuf);
             int count = cBuf.length();
+            int lineNumber = 0;
             for (int i = 0; i < count; i++) {
                 char ch = cBuf.get();
                 if(Character.isWhitespace(ch))
                     continue;
-                else if(delimiters.contains(Character.toString(ch)))
-                    isDelimiter(ch);
+                else if(delimiters.contains(Character.toString(ch))) {
+                    if(ch == '\n')
+                        lineNumber++;
+                    extractDelimiter(ch, lineNumber);
+                }
                 else if (ch == ':')
-                    firstColonSignState(ch);
+                    firstColonSignState(ch, lineNumber);
                 else if(ch == '<')
-                    firstLessThanSignState(ch);
+                    firstLessThanSignState(ch, lineNumber);
                 else if(ch == '>')
-                    firstMoreThanSignState(ch);
+                    firstMoreThanSignState(ch, lineNumber);
                 else if (Character.isDigit(ch))
-                    firstDigitState(ch);
+                    firstDigitState(ch, lineNumber);
                 else if(Character.isLetter(ch))
-                    firstDelimiterState(ch);
+                    firstDelimiterState(ch, lineNumber);
                 else throw new IllegalArgumentException("Undefined chacter.");
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void extractDelimiter(char ch, Integer lineNumber) {
+        String alias = Character.toString(ch);
+        lexemeTable.add(new StraightLexeme(alias, enterLexemeTable.get(alias), lineNumber));
     }
 }
 
