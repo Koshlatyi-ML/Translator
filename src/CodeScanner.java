@@ -3,8 +3,8 @@ import lexeme.Lexeme;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.*;
@@ -57,19 +57,14 @@ public class CodeScanner {
         try(FileInputStream fIn = new FileInputStream("code.mylang");
             FileChannel fChan = fIn.getChannel()) {
 
-            ByteBuffer buf = ByteBuffer.allocate(10);
+            MappedByteBuffer mBuf = fChan.map(FileChannel.MapMode.READ_ONLY, 0, fChan.size());
             Charset cs = Charset.forName("UTF-8");
-            int count;
-
-            while(fChan.read(buf) != -1) {
-                buf.rewind();
-                CharBuffer chbuff = cs.decode(buf);
-                count = chbuff.length();
-                for (int i = 0; i < count; i++) {
-                    System.out.print(chbuff.get());
-                }
-                buf.clear();
+            CharBuffer cBuf = cs.decode(mBuf);
+            int count = cBuf.length();
+            for (int i = 0; i < count; i++) {
+                System.out.print(cBuf.get());
             }
+
         } catch (IOException e) {
             e.printStackTrace();
         }
