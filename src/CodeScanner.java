@@ -45,9 +45,9 @@ public class CodeScanner {
     private Map<String, Integer> getEnterLexemeTable(File exisitingLexemesFile) {
         Map<String, Integer> enterLexemes = new HashMap<>();
         try (Scanner scanner = new Scanner(exisitingLexemesFile)) {
-            Integer id = scanner.nextInt();
-            String alias = scanner.next();
             while (scanner.hasNext()) {
+                Integer id = scanner.nextInt();
+                String alias = scanner.next();
                 enterLexemes.put(alias, id);
             }
         } catch (IOException e) {
@@ -62,29 +62,40 @@ public class CodeScanner {
 
             MappedByteBuffer mBuf = fChan.map(FileChannel.MapMode.READ_ONLY, 0, fChan.size());
             Charset cs = Charset.forName("UTF-8");
-            CharBuffer cBuf = cs.decode(mBuf);
-            int count = cBuf.length();
+            CharBuffer chBuf = cs.decode(mBuf);
             int lineNumber = 0;
-            for (int i = 0; i < count; i++) {
-                char ch = cBuf.get();
-                if(Character.isWhitespace(ch))
-                    continue;
-                else if(delimiters.contains(Character.toString(ch))) {
-                    if(ch == '\n')
+            StringBuffer currentLexeme = new StringBuffer();
+            while (chBuf.hasRemaining()) {
+                char ch = chBuf.get();
+                if(Character.isWhitespace(ch)) {
+                    if (ch == '\n')
                         lineNumber++;
-                    extractDelimiter(ch, lineNumber);
                 }
-                else if (ch == ':')
-                    firstColonSignState(ch, lineNumber);
-                else if(ch == '<')
-                    firstLessThanSignState(ch, lineNumber);
-                else if(ch == '>')
-                    firstMoreThanSignState(ch, lineNumber);
-                else if (Character.isDigit(ch))
-                    firstDigitState(ch, lineNumber);
-                else if(Character.isLetter(ch))
-                    firstDelimiterState(ch, lineNumber);
+                else if(delimiters.contains(Character.toString(ch))) {
+                    extractDelimiter(currentLexeme, lineNumber);
+                }
+                else if (ch == ':') {
+                    currentLexeme.append(ch);
+                    firstColonSignState(currentLexeme, lineNumber, chBuf);
+                }
+                else if(ch == '<') {
+                    currentLexeme.append(ch);
+                    firstLessThanSignState(currentLexeme, lineNumber, chBuf);
+                }
+                else if(ch == '>') {
+                    currentLexeme.append(ch);
+                    firstMoreThanSignState(currentLexeme, lineNumber, chBuf);
+                }
+                else if (Character.isDigit(ch)) {
+                    currentLexeme.append(ch);
+                    firstDigitState(currentLexeme, lineNumber, chBuf);
+                }
+                else if(Character.isLetter(ch)) {
+                    currentLexeme.append(ch);
+                    firstDelimiterState(currentLexeme, lineNumber, chBuf);
+                }
                 else throw new IllegalArgumentException("Undefined chacter.");
+                chBuf.reset();
             }
 
         } catch (IOException e) {
@@ -92,7 +103,13 @@ public class CodeScanner {
         }
     }
 
-    private void extractDelimiter(char ch, Integer lineNumber) {
+    private void extractDelimiter(char ch, int lineNumber) {
+        String alias = Character.toString(ch);
+        lexemeTable.add(new StraightLexeme(alias, enterLexemeTable.get(alias), lineNumber));
+    }
+
+    private void firstColonSignState(char ch, int lineNumber, CharBuffer chBuf) {
+        chBuf.mark();
         String alias = Character.toString(ch);
         lexemeTable.add(new StraightLexeme(alias, enterLexemeTable.get(alias), lineNumber));
     }
