@@ -66,7 +66,11 @@ public class CodeScanner {
             int lineNumber = 0;
             StringBuffer currentLexeme = new StringBuffer();
             while (chBuf.hasRemaining()) {
-                char ch = chBuf.get();
+                if(currentLexeme.length() == 0)
+                    currentLexeme.append(chBuf.get());
+
+                char ch = currentLexeme.charAt(0);
+
                 if(Character.isWhitespace(ch)) {
                     if (ch == '\n')
                         lineNumber++;
@@ -75,27 +79,21 @@ public class CodeScanner {
                     extractDelimiter(currentLexeme, lineNumber);
                 }
                 else if (ch == ':') {
-                    currentLexeme.append(ch);
                     firstColonSignState(currentLexeme, lineNumber, chBuf);
                 }
                 else if(ch == '<') {
-                    currentLexeme.append(ch);
                     firstLessThanSignState(currentLexeme, lineNumber, chBuf);
                 }
                 else if(ch == '>') {
-                    currentLexeme.append(ch);
                     firstMoreThanSignState(currentLexeme, lineNumber, chBuf);
                 }
                 else if (Character.isDigit(ch)) {
-                    currentLexeme.append(ch);
                     firstDigitState(currentLexeme, lineNumber, chBuf);
                 }
                 else if(Character.isLetter(ch)) {
-                    currentLexeme.append(ch);
                     firstDelimiterState(currentLexeme, lineNumber, chBuf);
                 }
                 else throw new IllegalArgumentException("Undefined chacter.");
-                chBuf.reset();
             }
 
         } catch (IOException e) {
@@ -103,16 +101,24 @@ public class CodeScanner {
         }
     }
 
-    private void extractDelimiter(char ch, int lineNumber) {
-        String alias = Character.toString(ch);
-        lexemeTable.add(new StraightLexeme(alias, enterLexemeTable.get(alias), lineNumber));
+    private void extractDelimiter(StringBuffer lex, int lineNumber) {
+        lexemeTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
+        lex.delete(0, lex.length());
     }
 
-    private void firstColonSignState(char ch, int lineNumber, CharBuffer chBuf) {
-        chBuf.mark();
-        String alias = Character.toString(ch);
-        lexemeTable.add(new StraightLexeme(alias, enterLexemeTable.get(alias), lineNumber));
+    private void firstColonSignState(StringBuffer lex, int lineNumber, CharBuffer chBuf) {
+        if (!chBuf.hasRemaining())
+            throw new IllegalArgumentException("Unexpceted token \":\"");
+
+        char ch = chBuf.get();
+        if (ch == '=') {
+            lex.append(ch);
+            lexemeTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
+            lex.delete(0, lex.length());
+        } else {
+            lexemeTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
+            lex.delete(0, lex.length());
+            lex.append(ch);
+        }
     }
 }
-
-
