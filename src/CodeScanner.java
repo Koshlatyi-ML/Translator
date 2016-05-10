@@ -53,7 +53,7 @@ public class CodeScanner {
         return enterLexemes;
     }
 
-    public void getLexems() {
+    public void getLexems() throws IllegalArgumentException {
         try(FileInputStream fIn = new FileInputStream("code.mylang");
             FileChannel fChan = fIn.getChannel()) {
 
@@ -62,7 +62,22 @@ public class CodeScanner {
             CharBuffer cBuf = cs.decode(mBuf);
             int count = cBuf.length();
             for (int i = 0; i < count; i++) {
-                System.out.print(cBuf.get());
+                char ch = cBuf.get();
+                if(Character.isWhitespace(ch))
+                    continue;
+                else if(delimiters.contains(Character.toString(ch)))
+                    isDelimiter(ch);
+                else if (ch == ':')
+                    firstColonSignState(ch);
+                else if(ch == '<')
+                    firstLessThanSignState(ch);
+                else if(ch == '>')
+                    firstMoreThanSignState(ch);
+                else if (Character.isDigit(ch))
+                    firstDigitState(ch);
+                else if(Character.isLetter(ch))
+                    firstDelimiterState(ch);
+                else throw new IllegalArgumentException("Undefined chacter.");
             }
 
         } catch (IOException e) {
