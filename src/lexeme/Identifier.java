@@ -3,10 +3,10 @@ package lexeme;
 /**
  * Created by Николай on 08.05.2016.
  */
-public class Identificator extends Lexeme {
+public class Identifier extends Lexeme {
     private int index;
 
-    public Identificator(String alias, int id, int lineNumber, int index) {
+    public Identifier(String alias, int id, int lineNumber, int index) {
         super(alias, id, lineNumber);
         this.index = index;
     }
