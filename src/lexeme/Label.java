@@ -3,7 +3,7 @@ package lexeme;
 /**
  * Created by Николай on 08.05.2016.
  */
-public class Label extends Lexeme {
+public abstract class Label extends Lexeme {
     private int index;
 
     public Label(String alias, int id, int lineNumber, int index) {
