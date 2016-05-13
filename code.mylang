@@ -3,11 +3,11 @@ var a, b, i, j, x : int;
 begin
 read(a);
 read(b);
-if a <= 10 and [b = 1 or a > b] goto exit;
-do i:= 0 by 1 to a
-do j:= 0 by 1 to a
+if a <= 10 and [b = 1 or a > b] goto i;
+do i := 0 by 1 to a
+do j := 0 by 1 to a
 write(i, j);
 x = (-1)↑b * a + a / 2;
-Write(x);
-exit:
-end.
+write(x);
+i:
+end

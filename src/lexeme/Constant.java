@@ -18,4 +18,18 @@ public class Constant extends Lexeme {
     public void setIndex(int index) {
         this.index = index;
     }
+
+    /** Overrode for comparing in constants tables */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        if (!this.alias.equals(((Constant)obj).getAlias()))
+            return false;
+        return true;
+    }
 }

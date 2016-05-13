@@ -4,18 +4,21 @@ package lexeme;
  * Created by Николай on 08.05.2016.
  */
 public abstract class Label extends Lexeme {
-    private int index;
-
-    public Label(String alias, int id, int lineNumber, int index) {
+    public Label(String alias, int id, int lineNumber) {
         super(alias, id, lineNumber);
-        this.index = index;
     }
 
-    public int getIndex() {
-        return index;
-    }
-
-    public void setIndex(int index) {
-        this.index = index;
+    /** Overrode for comparing in labels tables */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        if (!this.alias.equals(((Label)obj).getAlias()))
+            return false;
+        return true;
     }
 }

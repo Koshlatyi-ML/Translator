@@ -28,9 +28,9 @@ public class CodeScanner {
 
         this.delimiters = getDelimiters(delimitersFile);
         this.enterLexemeTable =  getEnterLexemeTable(exisitingLexemesFile);
-        List<Lexeme> identifiersTable  = new ArrayList<>();
-        List<Lexeme> constantsTable  = new ArrayList<>();
-        List<Lexeme> labelsTable  = new ArrayList<>();
+        this.identifiersTable  = new ArrayList<>();
+        this.constantsTable  = new ArrayList<>();
+        this.labelsTable  = new ArrayList<>();
     }
 
     private List<String> getDelimiters(File delimitersFile) {
@@ -59,11 +59,11 @@ public class CodeScanner {
         return enterLexemes;
     }
 
-    public ArrayList<Lexeme> getLexems(String sourceCodeFile) throws IllegalArgumentException {
+    public List<Lexeme> getLexems(String sourceCodeFile) throws IllegalArgumentException {
+        List<Lexeme> lexemesTable = new ArrayList<>();
+
         try(FileInputStream fIn = new FileInputStream(sourceCodeFile);
             FileChannel fChan = fIn.getChannel()) {
-
-            List<Lexeme> lexemesTable = new ArrayList<>();
 
             MappedByteBuffer mBuf = fChan.map(FileChannel.MapMode.READ_ONLY, 0, fChan.size());
             Charset cs = Charset.forName("UTF-8");
@@ -79,92 +79,45 @@ public class CodeScanner {
                 if(Character.isWhitespace(ch)) {
                     if (ch == '\n')
                         lineNumber++;
+                    currentLexeme.delete(0, currentLexeme.length());
                 }
                 else if(delimiters.contains(Character.toString(ch))) {
-                    extractDelimiter(currentLexeme, lineNumber, lexemesTable);
+                    extractStraightLexeme(currentLexeme, lineNumber, lexemesTable);
                 }
-                else if (ch == ':') {
-                    firstColonSignState(currentLexeme, lineNumber, chBuf, lexemesTable);
-                }
-                else if(ch == '<') {
-                    firstLessThanSignState(currentLexeme, lineNumber, chBuf, lexemesTable);
-                }
-                else if(ch == '>') {
-                    firstMoreThanSignState(currentLexeme, lineNumber, chBuf, lexemesTable);
+                else if((ch == '<') || (ch == '>') || (ch == ':')) {
+                    firstAngleBracketOrColon(currentLexeme, lineNumber, chBuf, lexemesTable);
                 }
                 else if (Character.isDigit(ch)) {
                     firstDigitState(currentLexeme, lineNumber, chBuf, lexemesTable);
                 }
-                else if(Character.isLetter(ch)) {
+                else if(Character.isLetter(ch) || ch == '_') {
                     firstLetterState(currentLexeme, lineNumber, chBuf, lexemesTable);
                 }
                 else {
-                    String errMessage = "At line: " + lineNumber + " Undefined chacter.";
+                    String errMessage = "At line: " + lineNumber + ". Undefined chacter.";
                     throw new IllegalArgumentException(errMessage);
                 }
 //                class type;
 //                lexemesTable.add(type.class.cast(obj));
             }
-
         } catch (IOException e) {
             e.printStackTrace();
         }
+        for(Lexeme l: lexemesTable)
+            System.out.println(l.getAlias() + "\t" + l.getClass());
+        return lexemesTable;
     }
 
-    private void extractDelimiter(StringBuffer lex, int lineNumber, List<Lexeme> lexemesTable) {
-        lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-        lex.delete(0, lex.length());
-    }
-
-    private void firstColonSignState(StringBuffer lex, int lineNumber, CharBuffer chBuf, List<Lexeme> lexemesTable) {
+    private void firstAngleBracketOrColon(StringBuffer lex, int lineNumber, CharBuffer chBuf, List<Lexeme> lexemesTable) {
         if (!chBuf.hasRemaining()) {
-            lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-            lex.delete(0, lex.length());
+            extractStraightLexeme(lex, lineNumber, lexemesTable);
         } else {
             char ch = chBuf.get();
             if (ch == '=') {
                 lex.append(ch);
-                lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-                lex.delete(0, lex.length());
+                extractStraightLexeme(lex, lineNumber, lexemesTable);
             } else {
-                lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-                lex.delete(0, lex.length());
-                lex.append(ch);
-            }
-        }
-    }
-
-    private void firstLessThanSignState(StringBuffer lex, int lineNumber, CharBuffer chBuf, List<Lexeme> lexemesTable) {
-        if (!chBuf.hasRemaining()) {
-            lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-            lex.delete(0, lex.length());
-        } else {
-            char ch = chBuf.get();
-            if (ch == '=') {
-                lex.append(ch);
-                lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-                lex.delete(0, lex.length());
-            } else {
-                lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));\
-                lex.delete(0, lex.length());
-                lex.append(ch);
-            }
-        }
-    }
-
-    private void firstMoreThanSignState(StringBuffer lex, int lineNumber, CharBuffer chBuf, List<Lexeme> lexemesTable) {
-        if (!chBuf.hasRemaining()) {
-            lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-            lex.delete(0, lex.length());
-        } else {
-            char ch = chBuf.get();
-            if (ch == '=') {
-                lex.append(ch);
-                lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
-                lex.delete(0, lex.length());
-            } else {
-                lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));\
-                lex.delete(0, lex.length());
+                extractStraightLexeme(lex, lineNumber, lexemesTable);
                 lex.append(ch);
             }
         }
@@ -172,36 +125,135 @@ public class CodeScanner {
 
     private void firstDigitState(StringBuffer lex, int lineNumber, CharBuffer chBuf, List<Lexeme> lexemesTable) {
         Constant con;
-        boolean isConstExisting = false;
 
         if (!chBuf.hasRemaining()) {
-            con = retrieveConstant(lex, lineNumber);
+            con = parseConstant(lex, lineNumber);
             lexemesTable.add(con);
-            constantsTable.add(con);
+            if(!constantsTable.contains(con))
+                constantsTable.add(con);
             lex.delete(0, lex.length());
         } else {
             char ch = chBuf.get();
-            while (Character.isDigit(ch)) {
+            while (Character.isDigit(ch) && chBuf.hasRemaining()) {
                 lex.append(ch);
                 ch = chBuf.get();
             }
-            con = retrieveConstant(lex, lineNumber);
+
+            con = parseConstant(lex, lineNumber);
             lexemesTable.add(con);
-            constantsTable.add(con);
+            if(!constantsTable.contains(con))
+                constantsTable.add(con);
             lex.delete(0, lex.length());
             lex.append(ch);
         }
     }
 
-    private Constant retrieveConstant(StringBuffer lex, int lineNumber) {
-        Constant con = new Constant(lex.toString(), enterLexemeTable.get("con"), lineNumber, constantsTable.size());;
+    private void firstLetterState(StringBuffer lex, int lineNumber, CharBuffer chBuf, List<Lexeme> lexemesTable) {
+        Lexeme lexeme; //???
+
+        if(!chBuf.hasRemaining()) {
+            if(lexemesTable.get(lexemesTable.size() - 1).getAlias().equals("goto")) {
+                lexeme = parseLabelDirecting(lex, lineNumber);
+                lexemesTable.add(lexeme);
+                lex.delete(0, lex.length());
+            } else {
+                lexeme = parseIdentifier(lex, lineNumber);
+                lexemesTable.add(lexeme);
+                if(!identifiersTable.contains(lexeme))
+                    identifiersTable.add((Identifier) lexeme);
+                lex.delete(0, lex.length());
+            }
+        } else {
+            char ch = chBuf.get();
+            while (Character.isLetter(ch) || Character.isLetter(ch) || ch == '-') {
+                lex.append(ch);
+                ch = chBuf.get();
+            }
+
+            if(enterLexemeTable.containsKey(lex.toString())) {
+                lexeme = parseStraightLexeme(lex, lineNumber);
+                lexemesTable.add(lexeme);
+                lex.delete(0, lex.length());
+                lex.append(ch);
+            } else if(lexemesTable.get(lexemesTable.size() - 1).getAlias().equals("goto")) {
+                lexeme = parseLabelDirecting(lex, lineNumber);
+                lexemesTable.add(lexeme);
+                lex.delete(0, lex.length());
+                lex.append(ch);
+            } else {
+                chBuf.mark();
+                char nextAfterLast = chBuf.get();
+                if(ch == ':' && nextAfterLast != '=') {
+                    lex.append(ch);
+                    lexeme = parseLabelDeclaration(lex, lineNumber);
+                    lexemesTable.add(lexeme);
+                    if (!lexemesTable.contains(lexeme))
+                        labelsTable.add((Label) lexeme);
+                    lex.delete(0, lex.length());
+                } else {
+                    lexeme = parseIdentifier(lex, lineNumber);
+                    lexemesTable.add(lexeme);
+                    if (!identifiersTable.contains(lexeme))
+                        identifiersTable.add((Identifier) lexeme);
+                    lex.delete(0, lex.length());
+                    lex.append(ch);
+                }
+                chBuf.reset();
+            }
+        }
+    }
+
+    private void extractStraightLexeme(StringBuffer lex, int lineNumber, List<Lexeme> lexemesTable) {
+        lexemesTable.add(new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber));
+        lex.delete(0, lex.length());
+    }
+
+    private StraightLexeme parseStraightLexeme(StringBuffer lex, int lineNumber) {
+        StraightLexeme lexeme = new StraightLexeme(lex.toString(), enterLexemeTable.get(lex.toString()), lineNumber);
+        return lexeme;
+    }
+
+    private Constant parseConstant(StringBuffer lex, int lineNumber) {
+        Constant con = new Constant(lex.toString(), enterLexemeTable.get("con"), lineNumber, constantsTable.size());
         for (Constant detectedConst : constantsTable) {
-            if (detectedConst.getAlias().equals(lex)) {
+            if (detectedConst.getAlias().equals(lex.toString())) {
                 con.setIndex(detectedConst.getIndex());
                 break;
             }
         }
         return con;
+    }
+
+    private Identifier parseIdentifier(StringBuffer lex, int lineNumber) {
+        Identifier identifier = new Identifier(lex.toString(), enterLexemeTable.get("idn"), lineNumber, identifiersTable.size());
+        for(Identifier idn : identifiersTable) {
+            if(idn.getAlias().equals(lex.toString())) {
+                identifier.setIndex(idn.getIndex());
+                break;
+            }
+        }
+        return identifier;
+    }
+
+    private LabelDirecting parseLabelDirecting(StringBuffer lex, int lineNumber) {
+        LabelDirecting labelDirecting = new LabelDirecting(lex.toString(), enterLexemeTable.get("label"), lineNumber, null);
+        for(Label label : labelsTable) {
+            if(label.getAlias().equals(lex.append(':').toString())) {
+                labelDirecting.setDeclaration((LabelDeclaration) label);
+                break;
+            }
+        }
+        return labelDirecting;
+    }
+
+    private LabelDeclaration parseLabelDeclaration(StringBuffer lex, int lineNumber) throws IllegalArgumentException {
+        for(Label label : labelsTable) {
+            if(label.getAlias().equals(lex.toString())) {
+                String errMessage = "At line: " + lineNumber + ". More than one " + lex.toString() + " declaration.";
+                throw new IllegalArgumentException(errMessage);
+            }
+        }
+        return new LabelDeclaration(lex.toString(), enterLexemeTable.get("label"), lineNumber, labelsTable.size());
     }
 
 

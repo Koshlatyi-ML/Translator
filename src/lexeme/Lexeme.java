@@ -4,9 +4,9 @@ package lexeme;
  * Created by Николай on 08.05.2016.
  */
 public abstract class Lexeme {
-    private String alias;
-    private int id;
-    private int lineNumber;
+    protected String alias;
+    protected int id;
+    protected int lineNumber;
 
     public Lexeme(String alias, int id, int lineNumber) {
         this.alias = alias;

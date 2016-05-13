@@ -3,11 +3,11 @@ package lexeme;
 /**
  * Created by Николай on 12.05.2016.
  */
-public class LabelDirection extends Label {
+public class LabelDirecting extends Label {
     private LabelDeclaration declaration;
 
-    public LabelDirection(String alias, int id, int lineNumber, int index, LabelDeclaration declaration) {
-        super(alias, id, lineNumber, index);
+    public LabelDirecting(String alias, int id, int lineNumber, LabelDeclaration declaration) {
+        super(alias, id, lineNumber);
         this.declaration = declaration;
     }
 
